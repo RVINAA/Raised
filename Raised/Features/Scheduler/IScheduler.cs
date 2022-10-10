@@ -4,6 +4,6 @@
 		where T : class, new()
 	{
 		void TryAdd(T item);
-		void Remove(T item);
+		void RemoveIfNeeded(T item);
 	}
 }

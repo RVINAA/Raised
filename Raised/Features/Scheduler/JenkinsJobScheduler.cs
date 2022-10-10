@@ -14,10 +14,11 @@ namespace Raised.Features
 	{
 		#region Fields
 
-		private const int DEF_INTERVAL = 600000; //< 10'.
 		private const string DSL_ENCODING = "%252F";
+		private const uint MIN_INTERVAL = 300000;
 
 		private readonly TelegramNotificationService _notificationSvc;
+		private readonly IJenkinsJobSchedulerSettings _settings;
 		private readonly IHttpClientService _httpClientSvc;
 		private readonly ILogger _logger;
 
@@ -27,15 +28,25 @@ namespace Raised.Features
 
 		public JenkinsJobScheduler(
 			TelegramNotificationService notificationSvc,
+			IJenkinsJobSchedulerSettings settings,
 			ILogger<JenkinsJobScheduler> logger,
-			IHttpClientService httpClientSvc)
+			IHttpClientService httpClientSvc
+		)
+			: base(logger)
 		{
 			Guard.IsNotNull(notificationSvc, nameof(notificationSvc));
 			Guard.IsNotNull(httpClientSvc, nameof(httpClientSvc));
+			Guard.IsNotNull(settings, nameof(settings));
 			Guard.IsNotNull(logger, nameof(logger));
+
+			Guard.Against<ArgumentOutOfRangeException>(
+				settings.Interval < MIN_INTERVAL,
+				"Scheduler's interval cannot be lower than {0}.", MIN_INTERVAL
+			);
 
 			_notificationSvc = notificationSvc;
 			_httpClientSvc = httpClientSvc;
+			_settings = settings;
 			_logger = logger;
 
 		}
@@ -82,8 +93,8 @@ namespace Raised.Features
 				╞> Branch's name: {item.Branch}
 				╞> Last state: {item.LastState}
 				╞> Test failures: {item.TestFailures?.ToString() ?? "N/A"}
-				╞> Took {item.Duration / 1000 / 60} minutes.
-				╘> Scheduled: {(item.IsFailed ? "🗸" : "🞨")}
+				╞> Took {item.Duration / 1000 / 60} minutes
+				╘> Scheduled: {(item.IsFailed ? "🗸" : "X")}
 				```
 			";
 		}
@@ -113,12 +124,14 @@ namespace Raised.Features
 
 			try
 			{
-				if (timer.Interval != DEF_INTERVAL)
-					timer.Interval = DEF_INTERVAL;
+				if (timer.Interval != _settings.Interval)
+					timer.Interval = _settings.Interval;
 
 				var auth = new AuthenticationHeaderValue(scheme: "Basic", parameter: item.B64);
 				var url = $"{item.Url}/job/{item.Repository}/job/{item.Branch.Replace("/", DSL_ENCODING)}";
 				var obj = _httpClientSvc.Get<DTOs.LastBuild>($"{url}/lastBuild/api/json", x => x.Headers.Authorization = auth);
+
+				_logger.LogDebug("Request for {JenkinsJob.Branch} - {JenkinsJob.Repository} done.. Building: {JenkinsJob.Building}", item.Branch, item.Repository, obj.Building);
 
 				if (obj.Building) //< Do nothing..
 					goto Restart;
@@ -127,9 +140,9 @@ namespace Raised.Features
 
 				_notificationSvc.Notify(item.ApiToken, item.Id, BuildNotificationFor(item));
 
-				if (!item.IsFailed) //< Just schedule failed builds..
+				if (!(item.IsFailed || item.IsAborted)) //< Schedule if failed or aborted.. we'll handle manual cancellations against the API.
 				{
-					Remove(item);
+					RemoveIfNeeded(item);
 					return;
 				}
 
@@ -142,7 +155,7 @@ namespace Raised.Features
 			{
 				SwallowExtensions.Execute(() => _notificationSvc.Notify(item.ApiToken, item.Id, GetFailureNotificationFor(item, ex)));
 				_logger.LogError(ex, "Something has failed.. discarding job ({JenkinsJob.Repository} - {JenkinsJob.Branch}).", item.Repository, item.Branch);
-				Remove(item);
+				RemoveIfNeeded(item);
 			}
 		}
 	}

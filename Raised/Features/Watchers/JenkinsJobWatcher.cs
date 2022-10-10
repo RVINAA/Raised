@@ -87,7 +87,14 @@ namespace Raised.Features
 						Guard.IsNotNullOrWhiteSpace(obj.Branch, nameof(obj.Branch));
 						Guard.IsNotNullOrWhiteSpace(obj.Url, nameof(obj.Url));
 
-						_scheduler.TryAdd(obj); //< No worry.. if 'bad data'.. the scheduler will discard it.
+						if (obj.Cancel != true)
+						{
+							_scheduler.TryAdd(obj);
+						}
+						else
+						{
+							_scheduler.RemoveIfNeeded(obj);
+						}
 
 						res.StatusDescription = "Seems good.. if invalid, you'll know.";
 						res.StatusCode = (int)HttpStatusCode.OK;

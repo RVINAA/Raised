@@ -25,7 +25,10 @@
 		public string Repository { get; set; }
 		public int? TestFailures { get; set; }
 
+		public bool? Cancel { get; set; }
+
 		public bool IsFailed => LastState == State.Failure;
+		public bool IsAborted => LastState == State.Aborted;
 
 		#endregion
 
@@ -46,6 +49,16 @@
 
 		public override bool Equals(object obj) => Equals(obj as JenkinsJob);
 
-		public override int GetHashCode() => base.GetHashCode();
+		public override int GetHashCode()
+		{
+			unchecked
+			{
+				var hash = 17; //< Joshua Bloch's approach.
+				hash *= 61 + Repository.GetHashCode();
+				hash *= 61 + Branch.GetHashCode();
+
+				return hash;
+			}
+		}
 	}
 }

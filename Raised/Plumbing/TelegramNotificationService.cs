@@ -6,6 +6,7 @@ namespace Raised
 	{
 		#region Fields
 
+		// TODO?: May this shouldn't be hardcoded, but anything more is supported.
 		private const string TELEGRAM_API_URL = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&parse_mode=MarkdownV2&text={2}";
 
 		private readonly IHttpClientService _httpClientSvc;

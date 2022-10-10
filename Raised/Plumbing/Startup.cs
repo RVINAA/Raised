@@ -22,6 +22,7 @@ namespace Raised
 				.Build();
 
 			services.AddSingleton(cfg)
+				.AddSingleton<IJenkinsJobSchedulerSettings>(_ => cfg.GetSection(nameof(JenkinsJobSchedulerSettings)).Get<JenkinsJobSchedulerSettings>())
 				.AddSingleton<IJenkinsJobWatcherSettings>(_ => cfg.GetSection(nameof(JenkinsJobWatcherSettings)).Get<JenkinsJobWatcherSettings>())
 				.AddScoped<IHttpListenerService, HttpListenerService>()
 				.AddSingleton<IHttpClientService, HttpClientService>()
@@ -34,7 +35,13 @@ namespace Raised
 
 		public static IHost GetHost() =>
 			Host.CreateDefaultBuilder()
-				.ConfigureLogging(x => x.AddSimpleConsole()
+				.ConfigureLogging(x =>
+					x.AddSimpleConsole(y =>
+					{
+						y.TimestampFormat = "hh:mm:ss.ms - ";
+						y.UseUtcTimestamp = true;
+						y.SingleLine = true;
+					})
 					.SetMinimumLevel(LogLevel.Debug))
 				.ConfigureServices(Customizer)
 				.Build();
