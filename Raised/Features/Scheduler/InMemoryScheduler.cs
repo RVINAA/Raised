@@ -56,7 +56,7 @@ namespace Raised.Features
 			}
 		}
 
-		public void RemoveIfNeeded(T item)
+		public void Remove(T item)
 		{
 			Guard.IsNotNull(item, nameof(item));
 

@@ -15,7 +15,7 @@ namespace Raised.Features
 		#region Fields
 
 		private const string DSL_ENCODING = "%252F";
-		private const uint MIN_INTERVAL = 300000;
+		private const uint MIN_INTERVAL = 300000; //< 5'.
 
 		private readonly TelegramNotificationService _notificationSvc;
 		private readonly IJenkinsJobSchedulerSettings _settings;
@@ -142,7 +142,7 @@ namespace Raised.Features
 
 				if (!(item.IsFailed || item.IsAborted)) //< Schedule if failed or aborted.. we'll handle manual cancellations against the API.
 				{
-					RemoveIfNeeded(item);
+					Remove(item);
 					return;
 				}
 
@@ -155,7 +155,7 @@ namespace Raised.Features
 			{
 				SwallowExtensions.Execute(() => _notificationSvc.Notify(item.ApiToken, item.Id, GetFailureNotificationFor(item, ex)));
 				_logger.LogError(ex, "Something has failed.. discarding job ({JenkinsJob.Repository} - {JenkinsJob.Branch}).", item.Repository, item.Branch);
-				RemoveIfNeeded(item);
+				Remove(item);
 			}
 		}
 	}

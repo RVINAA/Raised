@@ -93,7 +93,7 @@ namespace Raised.Features
 						}
 						else
 						{
-							_scheduler.RemoveIfNeeded(obj);
+							_scheduler.Remove(obj);
 						}
 
 						res.StatusDescription = "Seems good.. if invalid, you'll know.";
