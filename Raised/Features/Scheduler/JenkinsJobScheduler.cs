@@ -94,7 +94,7 @@ namespace Raised.Features
 				╞> Last state: {item.LastState}
 				╞> Test failures: {item.TestFailures?.ToString() ?? "N/A"}
 				╞> Took {item.Duration / 1000 / 60} minutes
-				╘> Scheduled: {(item.IsFailed ? "🗸" : "X")}
+				╘> Scheduled: {((item.IsSuccess || item.IsUnstable) ? "NO" : "YES")}
 				```
 			";
 		}
@@ -140,7 +140,7 @@ namespace Raised.Features
 
 				_notificationSvc.Notify(item.ApiToken, item.Id, BuildNotificationFor(item));
 
-				if (!(item.IsFailed || item.IsAborted)) //< Schedule if failed or aborted.. we'll handle manual cancellations against the API.
+				if (item.IsSuccess || item.IsUnstable)
 				{
 					Remove(item);
 					return;

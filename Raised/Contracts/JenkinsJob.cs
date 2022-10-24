@@ -27,8 +27,8 @@
 
 		public bool? Cancel { get; set; }
 
-		public bool IsFailed => LastState == State.Failure;
-		public bool IsAborted => LastState == State.Aborted;
+		public bool IsSuccess => LastState == State.Success;
+		public bool IsUnstable => LastState == State.Unstable;
 
 		#endregion
 
