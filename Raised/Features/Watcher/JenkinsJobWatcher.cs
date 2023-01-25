@@ -9,6 +9,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Raised.Features
 {
+	// TODO: Remove this.. and use a lightweight API instead
+	//		 as I remember to see one error a month ago maybe
+	//		 and now Idk nothing xdd.
+	//
+	// Additionally, would be nice to add new endpoints like:
+	//		 - [QUERY|GET] /jobs (returns a list of scheduled jobs..).
+	//		 - [POST] /schedule (returns job_id).
+	//		 - [DELETE] /remove/{job_id}
+	//
+	// This + Problem details..
 	internal class JenkinsJobWatcher : IWatcher
 	{
 		#region Fields

@@ -1,5 +1,6 @@
 ﻿namespace Raised.Contracts
 {
+	// TODO: Revise some validations..
 	internal sealed class JenkinsJob : IEquatable<JenkinsJob>, IHasToken
 	{
 		#region Inner Types
@@ -34,8 +35,8 @@
 
 		#region IHasToken members
 
-		public string ApiToken { get; set; }
-		public string Id { get; set; }
+		public string ApiToken { get; set; } //< TODO?: Rename.. (TelegramApiToken?)
+		public string Id { get; set; } //< TODO?: Rename.. if I'll only support TG no sense to call it Id.. (TelegramChannelId?).
 
 		#endregion
 

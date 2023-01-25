@@ -2,6 +2,8 @@
 
 namespace Raised
 {
+	// TODO: Remove this.. weido af; just load the template from a file (template isn't here but..)
+	//		 and call the httpClientSvc from the scheduler.. taking the TG API url from an appSetting.
 	internal class TelegramNotificationService
 	{
 		#region Fields
