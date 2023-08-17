@@ -1,19 +1,16 @@
 ﻿using System.Text.Json;
-using System.Net.Http.Json;
 
-using Raised.Facilities;
+using Raised.API.Facilities;
 
-using Microsoft.Extensions.Logging;
-
-namespace Raised
+namespace Raised.API
 {
-	internal interface IHttpClientService : IDisposable
+	public interface IHttpClientService : IDisposable
 	{
 		T Get<T>(string url, Action<HttpRequestMessage> customizer = null);
 		string Send(string url, HttpMethod method, Action<HttpRequestMessage> customizer = null);
 	}
 
-	internal sealed class HttpClientService : IHttpClientService
+	public sealed class HttpClientService : IHttpClientService
 	{
 		#region Fields
 
@@ -29,8 +26,6 @@ namespace Raised
 		private readonly CancellationTokenSource _cancellationTokenSource = new();
 		private readonly HttpClient _httpClient;
 		private readonly ILogger _logger;
-
-		private bool _disposed;
 
 		#endregion
 
@@ -103,15 +98,11 @@ namespace Raised
 
 		public void Dispose()
 		{
-			if (_disposed)
+			if (_cancellationTokenSource.IsCancellationRequested)
 				return;
 
-			if (!_cancellationTokenSource.IsCancellationRequested)
-				_cancellationTokenSource.Cancel();
-
-			_cancellationTokenSource.Dispose();
+			_cancellationTokenSource.Cancel();
 			_httpClient.Dispose();
-			_disposed = true;
 		}
 	}
 }
