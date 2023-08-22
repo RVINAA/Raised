@@ -22,14 +22,13 @@ namespace Raised.API
 			var cfg = new ConfigurationBuilder()
 				.SetBasePath(Directory.GetCurrentDirectory())
 				.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-				.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true) //load local settings
+				.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true) //< Load local settings.
 				.AddEnvironmentVariables()
 				.Build();
 
 			builder.Services.AddSingleton(cfg)
-				.AddSingleton(_ => cfg.GetSection("Settings").Get<Settings>())
-				//.AddSingleton<ITelegramSettings>(_ => cfg.GetSection("ITelegramSettings").Get<ITelegramSettings>())
-				//.AddSingleton<IJenkinsSettings>(_ => cfg.GetSection("JenkinsSettings").Get<IJenkinsSettings>())
+				.AddSingleton(_ => cfg.GetSection(nameof(Settings)).Get<Settings>())
+				.AddSingleton<IJenkinsScheduleStatsGatherer, JenkinsScheduleStatsGatherer>()
 				.AddSingleton<IJenkinsScheduleManager, JenkinsScheduleManager>()
 				.AddSingleton<IHttpClientService, HttpClientService>()
 				.AddSingleton<ITelegramSender, TelegramSender>();
@@ -39,7 +38,7 @@ namespace Raised.API
 				{
 					x.TimestampFormat = "hh:mm:ss.ms - ";
 					x.UseUtcTimestamp = true;
-					x.SingleLine = true;
+					x.SingleLine = false;
 				});
 
 			var app = builder.Build();

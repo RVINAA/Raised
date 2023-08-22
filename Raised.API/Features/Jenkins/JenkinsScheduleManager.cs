@@ -16,7 +16,7 @@ namespace Raised.API.Features
 		bool Exist(Guid scheduleId);
 		bool Exist(string repository, string branch);
 
-		Guid Create(string repository, string branch);
+		Guid Create(string repository, string branch, bool metrics);
 		void Remove(Guid scheduleId);
 	}
 
@@ -30,6 +30,8 @@ namespace Raised.API.Features
 		private readonly CancellationTokenSource _cts = new();
 
 		private readonly ILogger<JenkinsScheduleManager> _logger;
+
+		private readonly IJenkinsScheduleStatsGatherer _statsGatherer;
 		private readonly IHttpClientService _httpClientSvc;
 		private readonly ITelegramSender _telegram;
 		private readonly JenkinsSettings _settings;
@@ -42,6 +44,7 @@ namespace Raised.API.Features
 
 		public JenkinsScheduleManager(
 			ILogger<JenkinsScheduleManager> logger,
+			IJenkinsScheduleStatsGatherer statsGatherer,
 			IHttpClientService httpClientSvc,
 			ITelegramSender telegram,
 			Settings settings)
@@ -50,6 +53,7 @@ namespace Raised.API.Features
 			_telegram = telegram.ThrowIfNull(nameof(telegram));
 			_settings = settings?.Jenkins.ThrowIfNull(nameof(settings));
 			_httpClientSvc = httpClientSvc.ThrowIfNull(nameof(httpClientSvc));
+			_statsGatherer = statsGatherer.ThrowIfNull(nameof(statsGatherer));
 		}
 
 		#endregion
@@ -76,7 +80,7 @@ namespace Raised.API.Features
 			Guard.IsNotNull(state, nameof(state));
 
 			state.Revision = dto.Number;
-			state.LastDuration = dto.Duration;
+			state.LastDuration = TimeSpan.FromMilliseconds(dto.Duration);
 			state.LastState = dto.Result switch
 			{
 				"SUCCESS" => State._State.Success,
@@ -98,6 +102,26 @@ namespace Raised.API.Features
 			_logger.LogDebug("Updated state {0} with last result", state);
 		}
 
+		private void MayCollect(JenkinsLastBuild dto, State state)
+		{
+			Guard.IsNotNull(dto, nameof(dto));
+			Guard.IsNotNull(state, nameof(state));
+
+			if (!state.Schedule.Collect)
+				return;
+
+			JenkinsLastTestReports testReports = null;
+			if (state.TestFailures > 0) //< Fetch this if at least one test has failed.
+			{
+				var url = new Uri(_settings.Url);
+				var branch = state.Schedule.Branch.Replace("/", DSL_ENCODING);
+				url = new Uri(url, string.Format(_settings.TestReportPath, state.Schedule.Repository, branch));
+				testReports = _httpClientSvc.Get<JenkinsLastTestReports>(url.ToString(), x => x.Headers.Authorization = GetAuthHeader());
+			}
+
+			_statsGatherer.Collect(state, testReports);
+		}
+
 		private void Notify(State state)
 		{
 			Guard.IsNotNull(state, nameof(state));
@@ -113,7 +137,7 @@ namespace Raised.API.Features
 					│
 					╞> Last state: {3}
 					│
-					╞> Took {4} mins
+					╞> Took {4}
 					╞> Test failures: {5}
 					│
 					╘> (Re-)scheduled: {6}
@@ -122,7 +146,7 @@ namespace Raised.API.Features
 				state.Schedule.Repository, //< 1
 				state.Schedule.Branch, //< 2
 				state.LastState, //< 3,
-				state.LastDuration / 1000 / 60, //< 4
+				state.LastDuration.Prettify(), //< 4
 				state.TestFailures?.ToString() ?? "N/A", //< 5
 				state.IsDone ? "No" : "Yes" //< 6
 			);
@@ -164,6 +188,7 @@ namespace Raised.API.Features
 				if (_cts.IsCancellationRequested)
 					return;
 
+				MayCollect(response, state);
 				Dump(response, state); //< Load into the state the last results.
 				Notify(state);
 
@@ -231,14 +256,14 @@ namespace Raised.API.Features
 		/// <summary>
 		/// Add a new schedule to the collection w/ a new timer.
 		/// </summary>
-		public Guid Create(string repository, string branch)
+		public Guid Create(string repository, string branch, bool metrics)
 		{
 			Guard.IsNotNullOrWhiteSpace(repository, nameof(repository));
 			Guard.IsNotNullOrWhiteSpace(branch, nameof(branch));
 
 			_logger.LogDebug("Creating schedule for repository {0}, branch {1}", repository, branch);
 
-			var schedule = new JenkinsSchedule(branch, repository);
+			var schedule = new JenkinsSchedule(branch, repository, metrics);
 			var state = new State(schedule);
 
 			state.Timer = new Timer(new TimerCallback(TimerCallback), state, dueTime: TimeSpan.Zero, period: _settings.ScheduleDelay);

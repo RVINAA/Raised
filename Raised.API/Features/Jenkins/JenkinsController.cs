@@ -11,10 +11,6 @@ namespace Raised.API.Features
 	[Route("api/jenkins")]
 	public class JenkinsController : ControllerBase
 	{
-		#region Inner Types
-
-		#endregion
-
 		#region Fields
 
 		private readonly ILogger<JenkinsController> _logger;
@@ -43,7 +39,7 @@ namespace Raised.API.Features
 				return Conflict();
 			}
 
-			var uuid = _scheduler.Create(req.Repository, req.Branch);
+			var uuid = _scheduler.Create(req.Repository, req.Branch, req.Metrics);
 			_logger.LogInformation("Processed request to schedule a job ({0}) for repository {1}, branch {2}", uuid, req.Repository, req.Branch);
 
 			return Accepted(new JenkinsScheduleAdd._Result() { Id = uuid });
@@ -65,5 +61,8 @@ namespace Raised.API.Features
 
 			return Accepted();
 		}
+
+		// GET schedules/stats
+		// GET schedules/uuid/stats
 	}
 }

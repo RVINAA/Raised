@@ -31,6 +31,8 @@ namespace Raised.API
 		public string LastBuildPath { get; init; } = "job/{0}/job/{1}/lastBuild/api/json";
 
 		public string RebuildPath { get; init; } = "job/{0}/job/{1}/build";
+
+		public string TestReportPath { get; init; } = "job/{0}/job/{1}/lastBuild/testReport/api/json?tree=suites[name,cases[name,status]]";
 	}
 
 	public class TelegramSettings

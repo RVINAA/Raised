@@ -2,14 +2,14 @@
 
 namespace Raised.API.Features
 {
-	internal class JenkinsScheduleState
+	public class JenkinsScheduleState
 	{
 		#region Inner Types
 
 		public enum _State
 		{
 			Unknown = 0,
-			Unstable,
+			Unstable = 1,
 			Success,
 			Failure,
 			Aborted
@@ -27,8 +27,8 @@ namespace Raised.API.Features
 		public _State LastState { get; set; }
 
 		public int  Revision { get; set; }
-		public int  LastDuration { get; set; }
 		public int? TestFailures { get; set; }
+		public TimeSpan LastDuration { get; set; }
 
 		public bool IsUnstable => LastState == _State.Unstable;
 		public bool IsSuccess => LastState == _State.Success;

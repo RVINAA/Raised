@@ -2,17 +2,19 @@
 
 namespace Raised.API.Features
 {
-	internal record JenkinsSchedule
+	public record JenkinsSchedule
 	{
-		public Guid Id { get; init; }
+		public Guid Id { get; } = Guid.NewGuid();
+
+		public bool Collect {get; private init; }
 		public string Branch { get; private init; }
 		public string Repository { get; private init; }
 
 		internal (Guid, string, string) Key => (Id, Branch, Repository);
 
-		public JenkinsSchedule(string branch, string repository)
+		public JenkinsSchedule(string branch, string repository, bool metrics)
 		{
-			Id = Guid.NewGuid();
+			Collect = metrics;
 			Branch = branch.ThrowIfNullOrWhiteSpace(nameof(branch));
 			Repository = repository.ThrowIfNullOrWhiteSpace(nameof(repository));;
 		}

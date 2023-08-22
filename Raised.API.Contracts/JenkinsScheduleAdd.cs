@@ -24,5 +24,10 @@ namespace Raised.API.Contracts
 		/// </summary>
 		[Required]
 		public string Repository { get; set; }
+
+		/// <summary>
+		/// If true, some stats will be gatherer.
+		/// </summary>
+		public bool Metrics { get; set; }
 	}
 }
